@@ -7,10 +7,9 @@ public final class BattleEngine {
     private static BattleEngine instance;
     private Random random = new Random(1L);
 
-    private BattleEngine() {
-    }
+    private BattleEngine() {}
 
-    public static BattleEngine getInstance() {
+    public static synchronized BattleEngine getInstance() {
         if (instance == null) {
             instance = new BattleEngine();
         }
@@ -22,17 +21,34 @@ public final class BattleEngine {
         return this;
     }
 
-    public void reset() {
-        // TODO: reset any battle state if you add it
+    public EncounterResult runEncounter(List<Combatant> teamA, List<Combatant> teamB) {
+        EncounterResult result = new EncounterResult();
+        int rounds = 0;
+
+        while (!teamA.isEmpty() && !teamB.isEmpty()) {
+            rounds++;
+            result.addLog("--- Round " + rounds + " ---");
+
+            performAttacks(teamA, teamB, result);
+            teamB.removeIf(c -> !c.isAlive());
+
+            if (!teamB.isEmpty()) {
+                performAttacks(teamB, teamA, result);
+                teamA.removeIf(c -> !c.isAlive());
+            }
+        }
+
+        result.setRounds(rounds);
+        result.setWinner(teamA.isEmpty() ? "Team B (Enemies)" : "Team A (Heroes)");
+        return result;
     }
 
-    public EncounterResult runEncounter(List<Combatant> teamA, List<Combatant> teamB) {
-        // TODO: validate inputs and run round-based battle
-        // TODO: use random if you add critical hits or target selection
-        EncounterResult result = new EncounterResult();
-        result.setWinner("TBD");
-        result.setRounds(0);
-        result.addLog("TODO: implement battle simulation");
-        return result;
+    private void performAttacks(List<Combatant> attackers, List<Combatant> defenders, EncounterResult result) {
+        for (Combatant attacker : attackers) {
+            if (defenders.isEmpty()) break;
+            Combatant target = defenders.get(0);
+            target.takeDamage(attacker.getAttackPower());
+            result.addLog(attacker.getName() + " attacks " + target.getName() + " for " + attacker.getAttackPower());
+        }
     }
 }
